@@ -8,6 +8,7 @@ import Register from "./pages/Auth/Register";
 import ProtectedLayout from "./components/Layout/ProtectedRoute"; // Import Layout bảo vệ
 import Dashboard from "./pages/Dashboard";
 import Fields from "./pages/Fields";
+import CropsPage from "./pages/Crops";
 
 // Dummy Pages
 const AICheckPage = () => (
@@ -15,9 +16,6 @@ const AICheckPage = () => (
 );
 const ReportsPage = () => (
   <div className="p-8 font-bold text-2xl">Trang Báo cáo (Đang phát triển)</div>
-);
-const CropsPage = () => (
-  <div className="p-8 font-bold text-2xl">Trang Mùa vụ (Đang phát triển)</div>
 );
 
 function App() {

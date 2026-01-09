@@ -2,6 +2,11 @@ const diaryLogService = require("../services/diaryLogService");
 
 exports.getBySeason = async (req, res) => {
   try {
+    // [FIX] Kiểm tra seasonId trước khi gọi service
+    if (!req.query.seasonId) {
+      return res.status(400).json({ message: "Vui lòng cung cấp ID vụ mùa (seasonId)" });
+    }
+
     const logs = await diaryLogService.getLogsBySeason(req.query.seasonId, req.user.id);
     res.json(logs);
   } catch (error) {
@@ -14,6 +19,8 @@ exports.create = async (req, res) => {
     const log = await diaryLogService.createLog(req.body, req.user.id);
     res.status(201).json(log);
   } catch (error) {
+    // Log lỗi ra console server để dễ debug hơn
+    console.error("Create Log Error:", error);
     res.status(400).json({ message: error.message });
   }
 };
