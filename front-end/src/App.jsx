@@ -1,36 +1,17 @@
 import React from "react";
-import { BrowserRouter, Routes, Route, Outlet } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext"; // Import Context
 
-// 1. Import các Layout
-import Sidebar from "./components/Layout/Sidebar";
-import Header from "./components/Layout/Header";
-
-// 2. Import các Page thật (QUAN TRỌNG: Phải import đúng đường dẫn)
+// Pages
+import Login from "./pages/Auth/Login";
+import Register from "./pages/Auth/Register";
+import ProtectedLayout from "./components/Layout/ProtectedRoute"; // Import Layout bảo vệ
 import Dashboard from "./pages/Dashboard";
-import Fields from "./pages/Fields"; // <-- Đảm bảo dòng này trỏ đúng vào file Fields.jsx bạn vừa tạo
+import Fields from "./pages/Fields";
 
-// Layout chung
-const MainLayout = () => {
-  return (
-    <div className="flex bg-gray-50 min-h-screen font-sans text-gray-900">
-      <Sidebar />
-      <div className="flex-1 ml-64 flex flex-col">
-        <Header />
-        <main className="flex-1 overflow-hidden">
-          {" "}
-          {/* Thêm overflow-hidden để map không bị vỡ layout */}
-          <Outlet />
-        </main>
-      </div>
-    </div>
-  );
-};
-
-// Component trang giả lập (cho các trang chưa làm)
+// Dummy Pages
 const AICheckPage = () => (
-  <div className="p-8 font-bold text-2xl">
-    Trang AI Upload ảnh (Đang phát triển)
-  </div>
+  <div className="p-8 font-bold text-2xl">Trang AI (Đang phát triển)</div>
 );
 const ReportsPage = () => (
   <div className="p-8 font-bold text-2xl">Trang Báo cáo (Đang phát triển)</div>
@@ -41,20 +22,28 @@ const CropsPage = () => (
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<MainLayout />}>
-          <Route index element={<Dashboard />} />
+    // Bọc toàn bộ App trong AuthProvider
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          {/* --- PUBLIC ROUTES (Không cần đăng nhập) --- */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
 
-          {/* QUAN TRỌNG: Route này phải gọi component <Fields /> */}
-          <Route path="fields" element={<Fields />} />
+          {/* --- PRIVATE ROUTES (Phải đăng nhập mới vào được) --- */}
+          <Route element={<ProtectedLayout />}>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/fields" element={<Fields />} />
+            <Route path="/crops" element={<CropsPage />} />
+            <Route path="/ai-scan" element={<AICheckPage />} />
+            <Route path="/reports" element={<ReportsPage />} />
+          </Route>
 
-          <Route path="crops" element={<CropsPage />} />
-          <Route path="ai-scan" element={<AICheckPage />} />
-          <Route path="reports" element={<ReportsPage />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+          {/* Mặc định chuyển về Login nếu sai đường dẫn */}
+          <Route path="*" element={<Navigate to="/login" />} />
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
 

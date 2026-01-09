@@ -1,0 +1,44 @@
+const plotService = require("../services/plotService");
+
+const getByField = async (req, res) => {
+  try {
+    const { fieldId } = req.query; 
+    if (!fieldId) return res.status(400).json({ message: "Thiếu Field ID" });
+    
+    const plots = await plotService.getPlotsByField(fieldId, req.user.id);
+    res.json(plots);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+const create = async (req, res) => {
+  try {
+    const result = await plotService.createPlot(req.body, req.user.id);
+    res.status(201).json(result);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+const update = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await plotService.updatePlot(id, req.body, req.user.id);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+const remove = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await plotService.deletePlot(id, req.user.id);
+    res.json({ message: "Đã xóa thửa ruộng" });
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+module.exports = { getByField, create, update, remove };

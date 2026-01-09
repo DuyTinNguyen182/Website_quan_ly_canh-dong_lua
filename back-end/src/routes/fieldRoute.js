@@ -1,9 +1,14 @@
 const express = require("express");
 const router = express.Router();
 const fieldController = require("../controllers/fieldController");
+const { protect } = require("../middlewares/authMiddleware");
 
-// Giả sử có middleware checkAuth
+router.use(protect);
+
 router.post("/", fieldController.create);
 router.get("/", fieldController.getAll);
+
+router.put("/:id", fieldController.update);
+router.delete("/:id", fieldController.remove);
 
 module.exports = router;
