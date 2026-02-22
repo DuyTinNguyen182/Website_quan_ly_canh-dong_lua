@@ -14,7 +14,7 @@ const Sidebar = () => {
   const [collapsed, setCollapsed] = useState(false);
 
   const menuItems = [
-    { icon: LayoutDashboard, label: "Tổng quan", path: "/" },
+    { icon: LayoutDashboard, label: "Tổng quan", path: "/dashboard" },
     { icon: Map, label: "Quản lý Ruộng", path: "/fields" },
     { icon: Sprout, label: "Nhật ký Mùa vụ", path: "/crops" },
     { icon: ScanLine, label: "AI Chẩn đoán", path: "/ai-scan" },

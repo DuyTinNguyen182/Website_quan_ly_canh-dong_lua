@@ -9,7 +9,7 @@ const ProtectedLayout = () => {
 
   // Nếu chưa có user -> Login
   if (!user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return (

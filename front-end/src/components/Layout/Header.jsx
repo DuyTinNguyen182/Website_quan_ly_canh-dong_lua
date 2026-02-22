@@ -1,15 +1,15 @@
 import React from "react";
 import { Bell, Search, User, LogOut, LogIn } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext"; // Import Context
+import { useAuth } from "../../context/AuthContext";
 
 const Header = () => {
-  const { user, logout } = useAuth(); // Lấy thông tin user từ Context
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
-    navigate("/login");
+    navigate("/");
   };
 
   return (
@@ -24,7 +24,6 @@ const Header = () => {
         />
       </div>
 
-      {/* Right Actions - LOGIC THAY ĐỔI Ở ĐÂY */}
       <div className="flex items-center gap-4">
         {/* Nếu ĐÃ ĐĂNG NHẬP */}
         {user ? (

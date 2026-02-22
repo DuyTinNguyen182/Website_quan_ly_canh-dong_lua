@@ -1,7 +1,7 @@
 const express = require("express");
-const mongoose = require("mongoose");
 const cors = require("cors");
 require("dotenv").config();
+const connectDB = require("./src/config/db");
 
 const authRoutes = require("./src/routes/authRoute");
 const fieldRoutes = require("./src/routes/fieldRoute");
@@ -17,10 +17,7 @@ app.use(express.json());
 app.use(cors());
 
 // --- Database Connection ---
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("Đã kết nối MongoDB"))
-  .catch((err) => console.error("Lỗi kết nối DB:", err));
+connectDB();
 
 // --- Routes ---
 app.use("/api/auth", authRoutes);

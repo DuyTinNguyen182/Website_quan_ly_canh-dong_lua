@@ -19,7 +19,7 @@ const Login = () => {
 
     const result = await login(email, password);
     if (result.success) {
-      navigate("/"); // Chuyển hướng về trang chủ
+      navigate("/dashboard");
     } else {
       setError(result.message);
     }
