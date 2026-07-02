@@ -330,7 +330,7 @@ const AIChat = () => {
   };
 
   return (
-    <div className="app-page-shell relative flex flex-col overflow-hidden bg-slate-50">
+    <div className="app-page-shell relative flex flex-col overflow-hidden overscroll-contain bg-slate-50">
       {/* Smart Scrolling Header */}
       <div
         className={`absolute top-0 left-0 right-0 z-30 transition-transform duration-300 ease-in-out border-b border-slate-200/60 bg-white/85 backdrop-blur-xl px-4 md:px-6 py-2.5 shadow-sm hook-header ${
@@ -370,7 +370,7 @@ const AIChat = () => {
       </div>
 
       <div
-        className="flex-1 min-h-0 overflow-y-auto custom-scrollbar pt-[60px] pb-[0px] md:pb-[0px]"
+        className="flex-1 min-h-0 overflow-y-auto overscroll-contain custom-scrollbar pt-[60px] pb-[0px] md:pb-[0px]"
         onScroll={handleScroll}
       >
         {/* Chat messages wrapper */}

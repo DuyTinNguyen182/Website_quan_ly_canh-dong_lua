@@ -37,16 +37,19 @@ const ProtectedLayout = () => {
   const isAdmin = (user?.role || "").toLowerCase() === "admin";
   const enableMobileLayout = isMobileLayout && !isAdmin;
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
+  const [visualViewportHeight, setVisualViewportHeight] = useState(null);
 
   useEffect(() => {
     if (!enableMobileLayout || typeof window === "undefined") {
       setIsKeyboardOpen(false);
+      setVisualViewportHeight(null);
       return undefined;
     }
 
     const visualViewport = window.visualViewport;
     if (!visualViewport) {
       setIsKeyboardOpen(false);
+      setVisualViewportHeight(null);
       return undefined;
     }
 
@@ -58,8 +61,11 @@ const ProtectedLayout = () => {
         activeTag === "textarea" ||
         Boolean(activeElement?.isContentEditable);
       const viewportGap = window.innerHeight - visualViewport.height;
+      const isAskAiInput =
+        location.pathname === "/ask-ai" && activeElement?.id === "ai-chat-input";
 
-      setIsKeyboardOpen(isTextField && viewportGap > 120);
+      setVisualViewportHeight(Math.round(visualViewport.height));
+      setIsKeyboardOpen(isTextField && (viewportGap > 120 || isAskAiInput));
     };
 
     updateKeyboardState();
@@ -74,7 +80,7 @@ const ProtectedLayout = () => {
       window.removeEventListener("focusin", updateKeyboardState);
       window.removeEventListener("focusout", updateKeyboardState);
     };
-  }, [enableMobileLayout]);
+  }, [enableMobileLayout, location.pathname]);
 
   if (!user) {
     return <Navigate to="/login" replace />;
@@ -92,6 +98,10 @@ const ProtectedLayout = () => {
       <div
         className="min-h-screen bg-slate-50 font-sans text-slate-900"
         style={{
+          "--app-viewport-height":
+            isKeyboardOpen && visualViewportHeight
+              ? `${visualViewportHeight}px`
+              : "100svh",
           "--app-top-offset": "calc(64px + env(safe-area-inset-top))",
           "--app-bottom-offset": hideMobileBottomNav
             ? "0px"

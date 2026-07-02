@@ -100,24 +100,34 @@ input[type="reset"] {
 }
 
 :root {
+  --app-viewport-height: 100dvh;
   --app-top-offset: 80px;
   --app-bottom-offset: 0px;
 }
 
 .app-page-shell {
-  height: calc(100dvh - var(--app-top-offset) - var(--app-bottom-offset));
+  height: calc(
+    var(--app-viewport-height) - var(--app-top-offset) -
+      var(--app-bottom-offset)
+  );
 }
 
 .app-page-shell.page-scroll-shell {
   height: auto;
-  min-height: calc(100dvh - var(--app-top-offset) - var(--app-bottom-offset));
+  min-height: calc(
+    var(--app-viewport-height) - var(--app-top-offset) -
+      var(--app-bottom-offset)
+  );
 }
 
 @media (max-width: 767px) {
   .app-page-shell.page-scroll-shell,
   .app-page-shell.mobile-page-scroll-shell {
     height: auto;
-    min-height: calc(100dvh - var(--app-top-offset) - var(--app-bottom-offset));
+    min-height: calc(
+      var(--app-viewport-height) - var(--app-top-offset) -
+        var(--app-bottom-offset)
+    );
     padding-bottom: calc(var(--app-bottom-offset) + 1rem);
   }
 }
