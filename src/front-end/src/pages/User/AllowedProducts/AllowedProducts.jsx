@@ -31,7 +31,10 @@ const AllowedProducts = () => {
     setLoading(true);
     try {
       const res = await api.get("/allowed-products");
-      setProducts(res.data || []);
+      const visibleProducts = (res.data || []).filter(
+        (item) => item.is_active !== false,
+      );
+      setProducts(visibleProducts);
     } catch (error) {
       toast.error(
         error.response?.data?.message || "Không thể tải danh mục vật tư",

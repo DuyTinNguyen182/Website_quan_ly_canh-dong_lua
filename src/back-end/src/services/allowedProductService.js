@@ -1,16 +1,18 @@
 const AllowedProduct = require("../models/allowedProductsModel");
 
-const getProducts = async () => {
+const getProducts = async ({ includeInactive = false } = {}) => {
   try {
-    return await AllowedProduct.find().sort({ createdAt: -1 }).lean();
+    const filter = includeInactive ? {} : { is_active: true };
+    return await AllowedProduct.find(filter).sort({ createdAt: -1 }).lean();
   } catch (error) {
     throw new Error(`Không thể lấy danh sách sản phẩm: ${error.message}`);
   }
 };
 
-const getProductById = async (id) => {
+const getProductById = async (id, { includeInactive = false } = {}) => {
   try {
-    const product = await AllowedProduct.findById(id).lean();
+    const filter = includeInactive ? { _id: id } : { _id: id, is_active: true };
+    const product = await AllowedProduct.findOne(filter).lean();
     if (!product) {
       throw new Error("Không tìm thấy sản phẩm");
     }

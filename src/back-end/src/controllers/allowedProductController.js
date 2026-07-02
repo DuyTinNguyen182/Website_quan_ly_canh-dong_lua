@@ -2,7 +2,8 @@ const allowedProductService = require("../services/allowedProductService");
 
 exports.getAll = async (req, res) => {
   try {
-    const products = await allowedProductService.getProducts();
+    const includeInactive = (req.user?.role || "").toLowerCase() === "admin";
+    const products = await allowedProductService.getProducts({ includeInactive });
     res.json(products);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -11,7 +12,10 @@ exports.getAll = async (req, res) => {
 
 exports.getById = async (req, res) => {
   try {
-    const product = await allowedProductService.getProductById(req.params.id);
+    const includeInactive = (req.user?.role || "").toLowerCase() === "admin";
+    const product = await allowedProductService.getProductById(req.params.id, {
+      includeInactive,
+    });
     res.json(product);
   } catch (error) {
     res.status(404).json({ message: error.message });

@@ -98,10 +98,9 @@ const ProtectedLayout = () => {
       <div
         className="min-h-screen bg-slate-50 font-sans text-slate-900"
         style={{
-          "--app-viewport-height":
-            isKeyboardOpen && visualViewportHeight
-              ? `${visualViewportHeight}px`
-              : "100svh",
+          "--app-viewport-height": visualViewportHeight
+            ? `${visualViewportHeight}px`
+            : "100dvh",
           "--app-top-offset": "calc(64px + env(safe-area-inset-top))",
           "--app-bottom-offset": hideMobileBottomNav
             ? "0px"

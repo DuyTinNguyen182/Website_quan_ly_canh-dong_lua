@@ -192,10 +192,10 @@ const AllowedProductFormModal = ({
               />
               <div>
                 <p className="text-sm font-bold text-emerald-900">
-                  Cho phép AI tư vấn
+                  Hiển thị cho nông dân và AI
                 </p>
                 <p className="text-xs text-emerald-700 mt-0.5">
-                  Tắt tính năng này nếu HTX không cho phép sử dụng sản phẩm nữa.
+                  Tắt tùy chọn này để ẩn sản phẩm khỏi danh mục nông dân và không cho chatbot tư vấn.
                 </p>
               </div>
             </label>
