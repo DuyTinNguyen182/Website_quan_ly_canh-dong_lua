@@ -91,9 +91,7 @@ const buildDiagnosisPrompt = (diagnosisResult) => {
       : "";
 
   return [
-    `Tôi vừa quét lá lúa và hệ thống phát hiện bệnh: ${disease}. `, //(Độ tin cậy: ${confidence}).
-    // confidenceWarning,
-    // topPredictionText,
+    `Tôi vừa quét lá lúa và hệ thống phát hiện bệnh: ${disease}. `,
     "Hãy tư vấn cho tôi hướng xử lý, phòng ngừa và các bước theo dõi.",
   ]
     .filter(Boolean)
@@ -111,6 +109,7 @@ const AIChat = () => {
   const messagesEndRef = useRef(null);
 
   const [showHeader, setShowHeader] = useState(true);
+  const [isInputFocused, setIsInputFocused] = useState(false);
   const lastScrollY = useRef(0);
 
   const handleScroll = (e) => {
@@ -134,13 +133,46 @@ const AIChat = () => {
 
     if (Math.abs(diff) < 30) return;
 
-    if (diff > 0 && currentScrollY > 80) {
-      setShowHeader(false); // cuộn xuống
+    // Không ẩn Header khi đang gõ chữ
+    if (diff > 0 && currentScrollY > 80 && !isInputFocused) {
+      setShowHeader(false);
     } else if (diff < 0) {
-      setShowHeader(true); // cuộn lên
+      setShowHeader(true);
     }
     lastScrollY.current = currentScrollY;
   };
+
+  useEffect(() => {
+    if (isInputFocused) {
+      setShowHeader(true);
+    }
+  }, [isInputFocused]);
+
+  // Hàm tự động cuộn mượt mà xuống dòng mới nhất
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
+    });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [conversationMessages.length, isTyping]);
+
+  // Lắng nghe thao tác thay đổi chiều cao (như khi bàn phím ảo bật lên)
+  useEffect(() => {
+    const handleResize = () => {
+      if (document.activeElement?.id === "ai-chat-input") {
+        // Đợi 150ms cho Layout (bàn phím) mở hoàn tất rồi mượt mà đẩy tin nhắn lên
+        setTimeout(scrollToBottom, 150);
+      }
+    };
+
+    window.visualViewport?.addEventListener("resize", handleResize);
+    return () =>
+      window.visualViewport?.removeEventListener("resize", handleResize);
+  }, []);
 
   const displayedMessages = [pinnedMessage, ...conversationMessages].filter(
     Boolean,
@@ -159,10 +191,7 @@ const AIChat = () => {
 
   const clearRemoteSession = async (targetSessionId) => {
     if (!targetSessionId) return;
-
-    await api.post("/ai/chat/reset", {
-      sessionId: targetSessionId,
-    });
+    await api.post("/ai/chat/reset", { sessionId: targetSessionId });
   };
 
   const sendMessageToBackend = async (
@@ -188,18 +217,15 @@ const AIChat = () => {
 
   const loadHistory = async (targetSessionId) => {
     if (!targetSessionId) return false;
-
     try {
       const res = await api.get("/ai/chat/history", {
         params: { sessionId: targetSessionId },
       });
-
       const historyMessages = res.data?.data?.messages || [];
       if (historyMessages.length > 0) {
         syncConversationMessages(historyMessages);
         return true;
       }
-
       return false;
     } catch (error) {
       console.error("Lỗi khi tải lịch sử chat", error);
@@ -209,7 +235,6 @@ const AIChat = () => {
 
   useEffect(() => {
     const initChat = async () => {
-      // NẾU TỪ TRANG QUÉT QUA
       if (location.state?.result) {
         const previousSessionId = sessionId;
         const nextSessionId = createSessionId();
@@ -218,7 +243,6 @@ const AIChat = () => {
         setActiveSessionId(nextSessionId);
         setPinnedMessage(null);
 
-        // Optimistic setup: Show the user's message immediately
         syncConversationMessages([
           {
             role: "user",
@@ -242,24 +266,17 @@ const AIChat = () => {
           setIsTyping(false);
           window.history.replaceState({}, document.title);
         }
-
         return;
       }
 
-      // TRẠNG THÁI NORMAL
       setPinnedMessage(buildWelcomeMessage());
       const hasHistory = await loadHistory(sessionId);
       if (!hasHistory) {
         syncConversationMessages([]);
       }
     };
-
     initChat();
   }, []);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [conversationMessages.length, isTyping]);
 
   const handleSend = async () => {
     if (!input.trim() || isTyping) return;
@@ -388,7 +405,6 @@ const AIChat = () => {
                     msg.role === "user" ? "flex-row-reverse" : "flex-row"
                   }`}
                 >
-                  {/* Avatar */}
                   <div
                     className={`hidden md:flex w-9 h-9 md:w-10 md:h-10 rounded-full flex-shrink-0 items-center justify-center shadow-sm ${
                       msg.role === "user"
@@ -403,7 +419,6 @@ const AIChat = () => {
                     )}
                   </div>
 
-                  {/* Bubble */}
                   <div
                     className={`px-6 py-4 rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] text-sm md:text-[15px] leading-relaxed break-words relative w-fit overflow-hidden ${
                       msg.role === "user"
@@ -502,7 +517,7 @@ const AIChat = () => {
                 </div>
               </div>
             )}
-            <div ref={messagesEndRef} className="h-2" />
+            <div ref={messagesEndRef} className="h-4" />
           </div>
         </div>
       </div>
@@ -514,13 +529,18 @@ const AIChat = () => {
             <textarea
               id="ai-chat-input"
               value={input}
+              onFocus={() => {
+                setIsInputFocused(true);
+                setTimeout(scrollToBottom, 300);
+              }}
+              onBlur={() => setIsInputFocused(false)}
               onChange={(e) => {
                 setInput(e.target.value);
                 e.target.style.height = "auto";
                 e.target.style.height = e.target.scrollHeight + "px";
               }}
               onKeyDown={handleKeyDown}
-              placeholder="Nhập dấu hiệu bệnh hoặc câu hỏi cho AI..."
+              placeholder="Nhập câu hỏi cho AI..."
               className="w-full bg-transparent text-sm md:text-[15px] text-slate-800 py-2.5 md:py-3 px-4 focus:outline-none resize-none min-h-[44px] max-h-48"
               rows={1}
             />

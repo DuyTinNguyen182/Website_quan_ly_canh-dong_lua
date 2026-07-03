@@ -38,7 +38,7 @@ const ProtectedLayout = () => {
   const enableMobileLayout = isMobileLayout && !isAdmin;
 
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
-  // Đã xóa state visualViewportHeight vì trình duyệt tự động xử lý qua 100dvh
+  const [viewportHeight, setViewportHeight] = useState("100dvh");
 
   useEffect(() => {
     if (!enableMobileLayout || typeof window === "undefined") {
@@ -60,13 +60,17 @@ const ProtectedLayout = () => {
         activeTag === "textarea" ||
         Boolean(activeElement?.isContentEditable);
 
-      const viewportGap = window.innerHeight - visualViewport.height;
-      const isAskAiInput =
-        location.pathname === "/ask-ai" &&
-        activeElement?.id === "ai-chat-input";
+      setIsKeyboardOpen(isTextField);
 
-      // Chỉ quản lý state để ẩn/hiện bottom nav
-      setIsKeyboardOpen(isTextField && (viewportGap > 120 || isAskAiInput));
+      if (isTextField) {
+        setViewportHeight(`${visualViewport.height}px`);
+        requestAnimationFrame(() => {
+          window.scrollTo(0, 0);
+          if (document.body) document.body.scrollTop = 0;
+        });
+      } else {
+        setViewportHeight("100dvh");
+      }
     };
 
     updateKeyboardState();
@@ -94,13 +98,14 @@ const ProtectedLayout = () => {
   if (enableMobileLayout) {
     const currentTitle = MOBILE_PAGE_TITLES[location.pathname] || "AgriSmart";
     const hideMobileBottomNav =
-      location.pathname === "/ask-ai" && isKeyboardOpen;
+      location.pathname.includes("/ask-ai") && isKeyboardOpen;
 
     return (
       <div
-        className="flex flex-col h-[100dvh] overflow-hidden bg-slate-50 font-sans text-slate-900"
+        className="flex flex-col overflow-hidden bg-slate-50 font-sans text-slate-900"
         style={{
-          "--app-viewport-height": "100dvh",
+          height: viewportHeight,
+          "--app-viewport-height": viewportHeight,
           "--app-top-offset": "calc(64px + env(safe-area-inset-top))",
           "--app-bottom-offset": hideMobileBottomNav
             ? "0px"
@@ -139,7 +144,6 @@ const ProtectedLayout = () => {
                   navigate("/announcements");
                 }}
                 className="relative flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm"
-                aria-label="Thông báo và cảnh báo"
               >
                 <Bell size={18} />
                 {hasUnread ? (
@@ -154,8 +158,6 @@ const ProtectedLayout = () => {
                   type="button"
                   onClick={() => setIsMobileContactOpen((current) => !current)}
                   className="flex h-10 w-10 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 shadow-sm"
-                  aria-expanded={isMobileContactOpen}
-                  aria-label="Hỗ trợ"
                 >
                   <Headset size={18} />
                 </button>
@@ -185,7 +187,6 @@ const ProtectedLayout = () => {
                   navigate("/account");
                 }}
                 className="flex h-10 w-10 items-center justify-center rounded-2xl border border-emerald-100 bg-emerald-50 font-bold text-emerald-700"
-                aria-label="Tài khoản"
               >
                 {user.fullName ? user.fullName.charAt(0).toUpperCase() : "U"}
               </button>
@@ -193,12 +194,10 @@ const ProtectedLayout = () => {
           </div>
         </header>
 
-        {/* Khối main được set flex-1 để tự lấp đầy không gian trống, đẩy bot nav xuống đáy */}
-        <main className="flex-1 min-h-0 relative w-full">
+        <main className="flex-1 min-h-0 relative w-full overflow-y-auto">
           <Outlet />
         </main>
 
-        {/* Bọc BottomNav trong flex-shrink-0 để không bị bóp méo khi bàn phím mở */}
         {hideMobileBottomNav ? null : (
           <div className="flex-shrink-0">
             <MobileBottomNav />
