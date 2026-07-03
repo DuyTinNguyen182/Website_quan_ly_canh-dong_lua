@@ -9,6 +9,7 @@ const SeasonDetailFormModal = ({
   yearOptions,
   formData,
   errors = {},
+  minEndDate = "",
   submitting,
   onChange,
   onClose,
@@ -125,6 +126,7 @@ const SeasonDetailFormModal = ({
                 type="date"
                 value={formData.endDate}
                 onChange={(event) => onChange("endDate", event.target.value)}
+                min={minEndDate || undefined}
                 disabled={submitting}
                 aria-invalid={Boolean(errors.endDate)}
                 className={`w-full rounded-xl border px-4 py-2.5 outline-none focus:border-emerald-500 ${

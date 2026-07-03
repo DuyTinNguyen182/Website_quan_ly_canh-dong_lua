@@ -32,6 +32,29 @@ const INITIAL_SUMMARY = {
   notificationCount: 0,
 };
 
+const buildSaveSuccessMessage = (data, isEditing) => {
+  const actionText = isEditing ? "cập nhật" : "tạo";
+  const emailSummary = data?.emailSummary;
+
+  if (!emailSummary) {
+    return `Đã ${actionText} thông báo/cảnh báo.`;
+  }
+
+  const attemptedCount = emailSummary.attemptedCount || 0;
+  const sentCount = emailSummary.sentCount || 0;
+  const failedCount = emailSummary.failedCount || 0;
+
+  if (attemptedCount === 0) {
+    return `Đã ${actionText} thông báo/cảnh báo web. Không có email người nhận hợp lệ để gửi.`;
+  }
+
+  if (failedCount > 0) {
+    return `Đã ${actionText} thông báo/cảnh báo web. Email gửi được ${sentCount}, lỗi ${failedCount}.`;
+  }
+
+  return `Đã ${actionText} thông báo/cảnh báo và gửi email cho ${sentCount} người nhận.`;
+};
+
 const AdminAnnouncements = () => {
   const { toast, confirm } = useFeedback();
   const [items, setItems] = useState([]);
@@ -344,15 +367,17 @@ const AdminAnnouncements = () => {
 
     try {
       setSubmitting(true);
+      let responseData = null;
 
       if (editingId) {
-        await api.put(`/announcements/admin/${editingId}`, payload);
-        toast.success("Đã cập nhật thông báo/cảnh báo.");
+        const res = await api.put(`/announcements/admin/${editingId}`, payload);
+        responseData = res.data;
       } else {
-        await api.post("/announcements/admin", payload);
-        toast.success("Đã tạo thông báo/cảnh báo mới.");
+        const res = await api.post("/announcements/admin", payload);
+        responseData = res.data;
       }
 
+      toast.success(buildSaveSuccessMessage(responseData, Boolean(editingId)));
       closeFormModal();
       if (currentPage !== 1) {
         setCurrentPage(1);

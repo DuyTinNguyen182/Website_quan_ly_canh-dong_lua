@@ -10,10 +10,67 @@ const CURRENT_YEAR = new Date().getFullYear();
 const MIN_YEAR = 2023;
 const MAX_YEAR = CURRENT_YEAR + 5;
 const DETAILS_PER_PAGE = 8;
+const MIN_SEASON_DURATION_DAYS = 90;
 const YEAR_OPTIONS = Array.from(
   { length: MAX_YEAR - MIN_YEAR + 1 },
   (_, index) => String(MAX_YEAR - index),
 );
+
+const padDatePart = (value) => String(value).padStart(2, "0");
+
+const normalizeDateInputValue = (value) => {
+  if (!value) return "";
+
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value)) {
+    return value.slice(0, 10);
+  }
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : date.toISOString().slice(0, 10);
+};
+
+const parseDateInputValue = (value) => {
+  const normalized = normalizeDateInputValue(value);
+  const [year, month, day] = normalized.split("-").map(Number);
+
+  if (!year || !month || !day) {
+    return null;
+  }
+
+  return new Date(year, month - 1, day);
+};
+
+const toDateInputValue = (date) =>
+  [
+    date.getFullYear(),
+    padDatePart(date.getMonth() + 1),
+    padDatePart(date.getDate()),
+  ].join("-");
+
+const getMinSeasonEndDate = (startDate) => {
+  const date = parseDateInputValue(startDate);
+
+  if (!date) {
+    return "";
+  }
+
+  date.setDate(date.getDate() + MIN_SEASON_DURATION_DAYS);
+  return toDateInputValue(date);
+};
+
+const formatDateInputForDisplay = (dateInput) => {
+  const date = parseDateInputValue(dateInput);
+
+  return date
+    ? date.toLocaleDateString("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      })
+    : "";
+};
+
+const getTodayDateInputValue = () => toDateInputValue(new Date());
 
 const AdminSeasonDetails = () => {
   const { toast, confirm } = useFeedback();
@@ -162,10 +219,10 @@ const AdminSeasonDetails = () => {
     }
 
     if (formData.endDate && formData.startDate) {
-      const startDate = new Date(formData.startDate);
-      const endDate = new Date(formData.endDate);
-      if (endDate < startDate) {
-        nextErrors.endDate = "Ngày kết thúc không thể nhỏ hơn ngày bắt đầu.";
+      const minEndDate = getMinSeasonEndDate(formData.startDate);
+
+      if (minEndDate && formData.endDate < minEndDate) {
+        nextErrors.endDate = `Ngày kết thúc phải sau ngày bắt đầu ít nhất ${MIN_SEASON_DURATION_DAYS} ngày.`;
       }
     }
 
@@ -186,6 +243,22 @@ const AdminSeasonDetails = () => {
 
     setFormErrors(nextErrors);
     return Object.keys(nextErrors).length === 0;
+  };
+
+  const getFinishBlockedReason = (detail) => {
+    const minEndDate = getMinSeasonEndDate(detail?.startDate);
+
+    if (!minEndDate) {
+      return "Không thể kết thúc nhanh vì mùa vụ chưa có ngày bắt đầu hợp lệ.";
+    }
+
+    if (getTodayDateInputValue() < minEndDate) {
+      return `Chỉ có thể kết thúc nhanh từ ngày ${formatDateInputForDisplay(
+        minEndDate,
+      )} trở đi vì mùa vụ phải kéo dài ít nhất ${MIN_SEASON_DURATION_DAYS} ngày.`;
+    }
+
+    return "";
   };
 
   const handleSubmitDetail = async (event) => {
@@ -260,6 +333,13 @@ const AdminSeasonDetails = () => {
   };
 
   const handleFinish = async (detail) => {
+    const blockedReason = getFinishBlockedReason(detail);
+
+    if (blockedReason) {
+      toast.warning(blockedReason);
+      return;
+    }
+
     const confirmed = await confirm({
       title: "Kết thúc mùa vụ?",
       message:
@@ -343,6 +423,7 @@ const AdminSeasonDetails = () => {
           onPageChange={setCurrentPage}
           onStartEdit={openEditModal}
           onFinish={handleFinish}
+          getFinishBlockedReason={getFinishBlockedReason}
           onDelete={handleDelete}
         />
       )}
@@ -354,6 +435,7 @@ const AdminSeasonDetails = () => {
         yearOptions={YEAR_OPTIONS}
         formData={formData}
         errors={formErrors}
+        minEndDate={getMinSeasonEndDate(formData.startDate)}
         submitting={submitting}
         onChange={handleFormChange}
         onClose={closeFormModal}

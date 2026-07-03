@@ -59,6 +59,7 @@ const SeasonDetailTable = ({
   onPageChange,
   onStartEdit,
   onFinish,
+  getFinishBlockedReason = () => "",
   onDelete,
 }) => {
   return (
@@ -104,6 +105,11 @@ const SeasonDetailTable = ({
                 {seasonDetails.map((detail) => {
                   const finishable =
                     detail.status === "active" || detail.status === "planned";
+                  const finishBlockedReason = finishable
+                    ? getFinishBlockedReason(detail)
+                    : "";
+                  const finishDisabled =
+                    submitting || Boolean(finishBlockedReason);
 
                   return (
                     <tr
@@ -142,10 +148,13 @@ const SeasonDetailTable = ({
                         <div className="flex items-center justify-end gap-2">
                           {finishable ? (
                             <button
-                              disabled={submitting}
+                              disabled={finishDisabled}
                               onClick={() => onFinish(detail)}
-                              className="rounded-lg bg-indigo-50 p-2 text-indigo-700 transition-colors hover:bg-indigo-100"
-                              title="Kết thúc nhanh (Hôm nay)"
+                              className="rounded-lg bg-indigo-50 p-2 text-indigo-700 transition-colors hover:bg-indigo-100 disabled:cursor-not-allowed disabled:opacity-40"
+                              title={
+                                finishBlockedReason ||
+                                "Kết thúc nhanh (Hôm nay)"
+                              }
                             >
                               <CalendarCheck2 size={16} />
                             </button>

@@ -542,6 +542,12 @@ const sendAnnouncementEmails = async ({ recipients, title, content, type, delive
   );
 };
 
+const buildEmailSummary = (emailResults = []) => ({
+  attemptedCount: emailResults.length,
+  sentCount: emailResults.filter((item) => item.emailSent).length,
+  failedCount: emailResults.filter((item) => !item.emailSent).length,
+});
+
 const listReadableAnnouncementIds = async (currentUser) => {
   if (!currentUser?.id) {
     return [];
@@ -627,7 +633,7 @@ const createAnnouncement = async (payload = {}) => {
   const data = buildAnnouncementPayload(payload, null, recipientResolution);
   const created = await Announcement.create(data);
 
-  await sendAnnouncementEmails({
+  const emailResults = await sendAnnouncementEmails({
     recipients: recipientResolution.recipients,
     title: data.title,
     content: data.content,
@@ -640,7 +646,11 @@ const createAnnouncement = async (payload = {}) => {
     .populate("audience.userIds", "fullName")
     .lean();
 
-  return mapAnnouncementForAdmin(populated);
+  return {
+    ...mapAnnouncementForAdmin(populated),
+    emailSummary: buildEmailSummary(emailResults),
+    emailResults,
+  };
 };
 
 const createSystemAnnouncement = async (payload = {}) => {
@@ -675,11 +685,24 @@ const updateAnnouncement = async (id, payload = {}) => {
 
   await announcement.save();
 
+  const emailResults = await sendAnnouncementEmails({
+    recipients: recipientResolution.recipients,
+    title: data.title,
+    content: data.content,
+    type: data.type,
+    deliveryChannels: data.deliveryChannels,
+  });
+
   const populated = await Announcement.findById(announcement._id)
     .populate("targetConfig.fieldId", "name")
     .populate("audience.userIds", "fullName")
     .lean();
-  return mapAnnouncementForAdmin(populated);
+
+  return {
+    ...mapAnnouncementForAdmin(populated),
+    emailSummary: buildEmailSummary(emailResults),
+    emailResults,
+  };
 };
 
 const deleteAnnouncement = async (id) => {

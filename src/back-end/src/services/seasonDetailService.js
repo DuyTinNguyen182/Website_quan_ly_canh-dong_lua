@@ -13,6 +13,45 @@ const {
   autoAssignActivePlotsToSeason,
 } = require("./seasonPlotAutoAssignmentService");
 
+const MIN_SEASON_DURATION_DAYS = 90;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+const getDateOnlyTimestamp = (value) => {
+  const date = value instanceof Date ? value : new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return Number.NaN;
+  }
+
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+};
+
+const validateSeasonDateRange = (startDate, endDate) => {
+  if (!endDate) {
+    return;
+  }
+
+  if (!startDate) {
+    throw new Error("Vui lòng chọn ngày bắt đầu trước khi chọn ngày kết thúc.");
+  }
+
+  const startTimestamp = getDateOnlyTimestamp(startDate);
+  const endTimestamp = getDateOnlyTimestamp(endDate);
+
+  if (Number.isNaN(startTimestamp) || Number.isNaN(endTimestamp)) {
+    throw new Error("Ngày bắt đầu hoặc ngày kết thúc không hợp lệ.");
+  }
+
+  const minEndTimestamp =
+    startTimestamp + MIN_SEASON_DURATION_DAYS * MS_PER_DAY;
+
+  if (endTimestamp < minEndTimestamp) {
+    throw new Error(
+      `Ngày kết thúc phải sau ngày bắt đầu ít nhất ${MIN_SEASON_DURATION_DAYS} ngày.`,
+    );
+  }
+};
+
 const inferSeasonYear = (value) => {
   const sourceDate =
     value?.startDate || value?.endDate || value?.createdAt || value || null;
@@ -160,6 +199,8 @@ const ensureNoOverlappingActiveSeason = async (targetId = null) => {
 
 const createSeasonDetail = async (data) => {
   const { startDate, endDate } = data;
+  validateSeasonDateRange(startDate, endDate);
+
   const seasonId = await resolveSeasonId(data);
   const catalogMap = await getSeasonMap();
   const resolvedName = catalogMap.get(seasonId)?.name || "Không xác định";
@@ -239,6 +280,9 @@ const updateSeasonDetail = async (id, data) => {
       : existing.startDate;
   const finalEndDate =
     updateData.endDate !== undefined ? updateData.endDate : existing.endDate;
+
+  validateSeasonDateRange(finalStartDate, finalEndDate);
+
   const isActive =
     finalStartDate &&
     new Date(finalStartDate) <= now &&
@@ -279,6 +323,8 @@ const finishSeasonDetail = async (id) => {
   }
 
   const now = new Date();
+  validateSeasonDateRange(existing.startDate, now);
+
   if (existing.endDate && existing.endDate < now) {
     throw new Error("Mùa vụ này đã được kết thúc trước đó");
   }
