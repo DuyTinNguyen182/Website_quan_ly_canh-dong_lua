@@ -36,20 +36,19 @@ const ProtectedLayout = () => {
   const isMobileLayout = useIsMobileLayout();
   const isAdmin = (user?.role || "").toLowerCase() === "admin";
   const enableMobileLayout = isMobileLayout && !isAdmin;
+
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
-  const [visualViewportHeight, setVisualViewportHeight] = useState(null);
+  // Đã xóa state visualViewportHeight vì trình duyệt tự động xử lý qua 100dvh
 
   useEffect(() => {
     if (!enableMobileLayout || typeof window === "undefined") {
       setIsKeyboardOpen(false);
-      setVisualViewportHeight(null);
       return undefined;
     }
 
     const visualViewport = window.visualViewport;
     if (!visualViewport) {
       setIsKeyboardOpen(false);
-      setVisualViewportHeight(null);
       return undefined;
     }
 
@@ -60,11 +59,13 @@ const ProtectedLayout = () => {
         activeTag === "input" ||
         activeTag === "textarea" ||
         Boolean(activeElement?.isContentEditable);
+
       const viewportGap = window.innerHeight - visualViewport.height;
       const isAskAiInput =
-        location.pathname === "/ask-ai" && activeElement?.id === "ai-chat-input";
+        location.pathname === "/ask-ai" &&
+        activeElement?.id === "ai-chat-input";
 
-      setVisualViewportHeight(Math.round(visualViewport.height));
+      // Chỉ quản lý state để ẩn/hiện bottom nav
       setIsKeyboardOpen(isTextField && (viewportGap > 120 || isAskAiInput));
     };
 
@@ -92,15 +93,14 @@ const ProtectedLayout = () => {
 
   if (enableMobileLayout) {
     const currentTitle = MOBILE_PAGE_TITLES[location.pathname] || "AgriSmart";
-    const hideMobileBottomNav = location.pathname === "/ask-ai" && isKeyboardOpen;
+    const hideMobileBottomNav =
+      location.pathname === "/ask-ai" && isKeyboardOpen;
 
     return (
       <div
-        className="min-h-screen bg-slate-50 font-sans text-slate-900"
+        className="flex flex-col h-[100dvh] overflow-hidden bg-slate-50 font-sans text-slate-900"
         style={{
-          "--app-viewport-height": visualViewportHeight
-            ? `${visualViewportHeight}px`
-            : "100dvh",
+          "--app-viewport-height": "100dvh",
           "--app-top-offset": "calc(64px + env(safe-area-inset-top))",
           "--app-bottom-offset": hideMobileBottomNav
             ? "0px"
@@ -108,7 +108,7 @@ const ProtectedLayout = () => {
         }}
       >
         <header
-          className="sticky top-0 z-40 border-b border-slate-200 bg-white/92 backdrop-blur-xl md:hidden"
+          className="sticky top-0 z-40 flex-shrink-0 border-b border-slate-200 bg-white/92 backdrop-blur-xl md:hidden"
           style={{ paddingTop: "env(safe-area-inset-top)" }}
         >
           <div className="mx-auto flex h-16 max-w-xl items-center justify-between px-4">
@@ -164,8 +164,8 @@ const ProtectedLayout = () => {
                   <div className="absolute right-0 top-12 z-50 w-72 rounded-lg border border-slate-200 bg-white p-4 text-left shadow-xl">
                     <p className="text-sm font-bold text-slate-900">Hỗ trợ</p>
                     <p className="mt-2 text-sm leading-6 text-slate-600">
-                      Mọi thắc mắc xin liên hệ đến ban quản lý hợp tác xã qua
-                      số điện thoại{" "}
+                      Mọi thắc mắc xin liên hệ đến ban quản lý hợp tác xã qua số
+                      điện thoại{" "}
                       <a
                         href={`tel:${CONTACT_PHONE}`}
                         className="font-bold text-emerald-700"
@@ -193,11 +193,17 @@ const ProtectedLayout = () => {
           </div>
         </header>
 
-        <main className="min-h-0">
+        {/* Khối main được set flex-1 để tự lấp đầy không gian trống, đẩy bot nav xuống đáy */}
+        <main className="flex-1 min-h-0 relative w-full">
           <Outlet />
         </main>
 
-        {hideMobileBottomNav ? null : <MobileBottomNav />}
+        {/* Bọc BottomNav trong flex-shrink-0 để không bị bóp méo khi bàn phím mở */}
+        {hideMobileBottomNav ? null : (
+          <div className="flex-shrink-0">
+            <MobileBottomNav />
+          </div>
+        )}
       </div>
     );
   }
@@ -210,7 +216,10 @@ const ProtectedLayout = () => {
         "--app-bottom-offset": "0px",
       }}
     >
-      <Sidebar collapsed={isSidebarCollapsed} setCollapsed={setIsSidebarCollapsed} />
+      <Sidebar
+        collapsed={isSidebarCollapsed}
+        setCollapsed={setIsSidebarCollapsed}
+      />
 
       <div
         className={`flex min-h-screen flex-1 flex-col transition-all duration-300 ${
