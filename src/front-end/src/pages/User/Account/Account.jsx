@@ -245,13 +245,18 @@ const Account = () => {
         newPassword: passwordForm.newPassword,
       });
 
-      toast.success(response.data?.message || "Đổi mật khẩu thành công!");
+      toast.success(
+        response.data?.message ||
+          "Đổi mật khẩu thành công. Vui lòng đăng nhập lại!",
+      );
       setPasswordForm({
         currentPassword: "",
         newPassword: "",
         confirmPassword: "",
       });
       setPasswordErrors({});
+      await logout();
+      navigate("/login", { replace: true });
     } catch (error) {
       toast.error(error?.response?.data?.message || "Lỗi đổi mật khẩu");
     } finally {

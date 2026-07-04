@@ -397,7 +397,7 @@ const getFarmerDashboardData = async (userId, querySeasonDetailId = "") => {
       comparisonType = "neutral";
     }
   } else if (userCostPer1000 > 0) {
-    comparisonText = "Vụ đầu tiên ghi nhận chi phí trên hệ thống";
+    comparisonText = "Vụ đầu tiên trên hệ thống";
   }
 
   return {

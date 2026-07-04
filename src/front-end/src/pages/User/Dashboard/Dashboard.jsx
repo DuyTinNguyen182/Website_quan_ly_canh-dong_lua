@@ -449,7 +449,11 @@ const FarmerDashboard = () => {
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-2">
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-2 lg:grid-cols-5">
           <KpiCard
-            title="Số thửa đang canh tác"
+            title={
+              isSelectedSeasonEnded
+                ? "Số thửa đã canh tác"
+                : "Số thửa đang canh tác"
+            }
             value={formatNumber(kpis.totalActivePlots)}
             icon={Layers}
             accentClass="bg-fuchsia-50"
@@ -480,12 +484,13 @@ const FarmerDashboard = () => {
           />
 
           <div className="rounded-lg border border-gray-200 bg-white p-2.5 shadow-sm">
-            <div className="flex h-full items-end gap-2">
-              <div className="flex-1">
-                <label className="block text-xs font-medium text-gray-600">
-                  Bộ lọc mùa vụ
-                </label>
-                <div className="mt-1">
+            <div className="flex h-full flex-col justify-between gap-2">
+              <label className="block text-xs font-medium text-gray-600">
+                Bộ lọc mùa vụ
+              </label>
+
+              <div className="flex items-center gap-2">
+                <div className="min-w-0 flex-1">
                   <CustomDropdown
                     value={selectedSeasonId}
                     onChange={setSelectedSeasonId}
@@ -502,18 +507,18 @@ const FarmerDashboard = () => {
                     ]}
                   />
                 </div>
-              </div>
 
-              <button
-                type="button"
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="inline-flex h-[34px] items-center justify-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                <RefreshCw
-                  className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`}
-                />
-              </button>
+                <button
+                  type="button"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="inline-flex h-[34px] shrink-0 items-center justify-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <RefreshCw
+                    className={`h-3 w-3 ${refreshing ? "animate-spin" : ""}`}
+                  />
+                </button>
+              </div>
             </div>
           </div>
         </div>
