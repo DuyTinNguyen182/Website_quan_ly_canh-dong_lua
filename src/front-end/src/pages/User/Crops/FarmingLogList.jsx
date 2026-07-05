@@ -35,6 +35,16 @@ const getLogScopeLabel = (log) => {
   return `${plots.length} thửa`;
 };
 
+const isLogEditable = (log) => {
+  const GRACE_PERIOD_DAYS = 3;
+  const baseDate = log.createdAt || log.date;
+  if (!baseDate) return true;
+
+  const daysSinceCreation =
+    (new Date() - new Date(baseDate)) / (1000 * 60 * 60 * 24);
+  return daysSinceCreation <= GRACE_PERIOD_DAYS;
+};
+
 const FarmingLogList = ({
   loading,
   currentSeason,
@@ -137,7 +147,7 @@ const FarmingLogList = ({
                         </span>
                       </span>
                     )}
-                    {isSeasonActive && (
+                    {isSeasonActive && isLogEditable(log) && (
                       <div className="flex gap-0.5 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
                         <button
                           onClick={() => onEditLog(log)}

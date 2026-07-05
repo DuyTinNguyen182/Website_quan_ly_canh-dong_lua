@@ -357,6 +357,23 @@ const validateNoSubsequentTaskForDeletion = async (logToDelete) => {
     );
   }
 };
+
+// Ràng buộc thời gian cập nhật (Time-Lock 3 ngày tính từ lúc tạo)
+const validateGracePeriod = (log) => {
+  const GRACE_PERIOD_DAYS = 3;
+  // Ưu tiên createdAt để biết chính xác lúc dữ liệu được nạp vào hệ thống
+  const baseDate = log.createdAt || log.date;
+  const now = new Date();
+
+  const daysSinceCreation = (now - new Date(baseDate)) / (1000 * 60 * 60 * 24);
+
+  if (daysSinceCreation > GRACE_PERIOD_DAYS) {
+    throw new Error(
+      `Nhật ký này đã được tạo quá ${GRACE_PERIOD_DAYS} ngày. Hệ thống đã khóa sổ, không thể chỉnh sửa hoặc xóa.`,
+    );
+  }
+};
+
 const createLog = async (data, userId) => {
   validateBasicInputs(data.date, data.cost);
 
@@ -420,6 +437,8 @@ const updateLog = async (id, data, userId) => {
   if (!existingLog) {
     throw new Error("Không tìm thấy nhật ký");
   }
+
+  validateGracePeriod(existingLog);
 
   validateBasicInputs(
     data.date || existingLog.date,
@@ -536,6 +555,8 @@ const deleteLog = async (id, userId) => {
   if (!existingLog) {
     throw new Error("Không tìm thấy nhật ký");
   }
+
+  validateGracePeriod(existingLog);
 
   const seasonId = getSeasonIdFromLog(existingLog);
   if (!seasonId) {
