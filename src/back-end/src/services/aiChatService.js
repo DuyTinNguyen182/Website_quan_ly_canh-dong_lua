@@ -6,9 +6,7 @@ const openaiClient = process.env.OPENAI_API_KEY
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   : null;
 
-// ==========================================
 // QUẢN LÝ SESSION (RAM)
-// ==========================================
 const MAX_SESSION_MESSAGES = 5;
 const SESSION_TTL_MS = 30 * 60 * 1000;
 const sessionStore = new Map();
@@ -82,9 +80,7 @@ const clearSessionMessages = async (userId, sessionId) => {
   sessionStore.delete(getSessionKey(userId, sessionId));
 };
 
-// ==========================================
 // CẤU HÌNH AI & FUNCTION CALLING
-// ==========================================
 const systemPrompt = `Bạn là Kỹ sư Cố vấn Nông nghiệp đại diện cho Ban quản lý Hợp tác xã (HTX) - có trình độ chuyên môn ngang Tiến sĩ Bảo vệ Thực vật, am hiểu sâu về canh tác lúa vùng ĐBSCL.
 Nhiệm vụ của bạn là tư vấn TẬN GỐC vấn đề cho nông dân, dựa trên kiến thức Bảo vệ thực vật THỰC TẾ (cơ chế gây bệnh, đặc điểm sinh học của nấm/vi khuẩn/côn trùng), KHÔNG trả lời rập khuôn. Luôn xưng hô là "tôi" và gọi người hỏi là "bà con".
 
@@ -158,19 +154,19 @@ const tools = [
     function: {
       name: "search_approved_products",
       description:
-        "Tìm kiếm thuốc hoặc phân bón có trong khuyến nghị của HTX dựa trên bệnh, tình trạng lúa hoặc giai đoạn phát triển. CHỈ gọi khi: (1) bà con hỏi về bệnh/dịch hại ĐÃ xảy ra (cần điều trị), hoặc (2) bà con hỏi rõ về vật tư/thuốc/phân phòng ngừa cụ thể. KHÔNG gọi khi bà con chỉ hỏi 'cách phòng ngừa' chung chung mà chưa yêu cầu vật tư.",
+        "Tìm kiếm thuốc hoặc phân bón có trong khuyến nghị của HTX dựa trên bệnh, tình trạng lúa hoặc giai đoạn phát triển. CHỈ gọi khi: (1) bà con hỏi về bệnh/dịch hại ĐÃ xảy ra (cần điều trị), hoặc (2) bà con hỏi rõ về vật tư/thuốc/phân phòng ngừa cụ thể.",
       parameters: {
         type: "object",
         properties: {
           issue_detected: {
             type: "string",
             description:
-              "Bệnh hoặc tình trạng lúa. Tự chuyển từ lóng (đẹt, còi cọc...) sang chuẩn (kém phát triển) trước khi tìm.",
+              "CHỈ trích xuất tên bệnh/vấn đề ngắn gọn (VD: 'đạo ôn', 'lem lép hạt'). TUYỆT ĐỐI KHÔNG thêm chữ 'bệnh' hay 'bị' ở đầu.",
           },
           growth_stage: {
             type: "string",
             description:
-              "Giai đoạn phát triển (vd: bón lót, đẻ nhánh, 10 ngày tuổi...).",
+              "Giai đoạn phát triển chuẩn của lúa (VD: 'bón lót', 'đẻ nhánh', 'làm đòng', 'trổ lẹt xẹt', 'trổ đều'). KHÔNG dùng các từ chung chung như 'đang phát triển'.",
           },
           category_needed: {
             type: "string",
@@ -201,20 +197,31 @@ const buildFallbackReply = (userMessage, diagnosisSnapshot) => {
 async function searchProductsFromDB(args) {
   try {
     const { issue_detected, growth_stage, category_needed } = args;
-    let query = { is_active: true };
 
+    console.log("Dữ liệu AI truyền vào Tool:", args);
+
+    let query = { is_active: true };
     if (category_needed !== "all") query.category = category_needed;
 
     const orConditions = [];
+
+    // ƯU TIÊN 1: Nếu có tên bệnh, CHỈ tìm theo bệnh
     if (issue_detected) {
-      const issueRegex = new RegExp(issue_detected, "i");
+      const cleanIssue = issue_detected
+        .replace(/^(bệnh|bị|chứng)\s+/gi, "")
+        .trim();
+      const issueRegex = new RegExp(cleanIssue, "i");
       orConditions.push(
         { target_issues: issueRegex },
         { instructions: issueRegex },
       );
     }
-    if (growth_stage) {
-      const stageRegex = new RegExp(growth_stage, "i");
+    // ƯU TIÊN 2: Chỉ tìm theo giai đoạn NẾU không hỏi bệnh
+    else if (growth_stage) {
+      const cleanStage = growth_stage
+        .replace(/^(giai đoạn|lúc|thời kỳ|đang)\s+/gi, "")
+        .trim();
+      const stageRegex = new RegExp(cleanStage, "i");
       orConditions.push(
         { usage_periods: stageRegex },
         { instructions: stageRegex },
@@ -236,16 +243,14 @@ async function searchProductsFromDB(args) {
       )
       .join("\n\n");
 
-    return `Dưới đây là các sản phẩm HTX khuyến nghị:\n${foundProductsText}\n\nHãy tư vấn chi tiết cách sử dụng các sản phẩm này cho bà con dựa theo ngữ cảnh phòng bệnh hay trị bệnh.`;
+    return `Dưới đây là các sản phẩm HTX khuyến nghị:\n${foundProductsText}\n\nHãy ĐỌC KỸ 'Giai đoạn dùng' của từng thuốc và đối chiếu với số ngày tuổi/tình trạng lúa của bà con để chọn ra loại phù hợp nhất tư vấn.`;
   } catch (error) {
     console.error("Lỗi query DB:", error);
     return "Lỗi truy xuất hệ thống. Vui lòng tư vấn dựa trên kiến thức chung của chuyên gia.";
   }
 }
 
-// ==========================================
-// HÀM CHÍNH XỬ LÝ CHAT (ĐƯỢC GỌI TỪ CONTROLLER)
-// ==========================================
+// HÀM CHÍNH XỬ LÝ CHAT
 const processChatRequest = async (
   userId,
   sessionId,
