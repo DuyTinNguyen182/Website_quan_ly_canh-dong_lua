@@ -83,6 +83,17 @@ const getLogPlots = (log) =>
 const getSourceLabel = (source) =>
   source === "manual" ? "Thủ công" : "AI scan";
 
+const isLogPastGracePeriod = (log) => {
+  if (!log) return false;
+  const GRACE_PERIOD_DAYS = 3;
+  const baseDate = log.createdAt || log.detectedAt;
+  if (!baseDate) return false;
+  return (
+    (new Date() - new Date(baseDate)) / (1000 * 60 * 60 * 24) >
+    GRACE_PERIOD_DAYS
+  );
+};
+
 const DetailInfo = ({ label, value, children }) => (
   <div className="rounded-xl bg-gray-50/80 p-3 ring-1 ring-gray-100">
     <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
@@ -316,7 +327,9 @@ const DiseaseLogs = () => {
     [formSeasons, form.seasonId],
   );
   const isHistoricalEdit = Boolean(
-    editingLog && selectedFormSeason?.status !== "active",
+    editingLog &&
+    (selectedFormSeason?.status !== "active" ||
+      isLogPastGracePeriod(editingLog)),
   );
   const hasActiveFilters = Boolean(
     keyword.trim() || filters.fieldId || filters.seasonId || filters.status,
@@ -712,6 +725,7 @@ const DiseaseLogs = () => {
                 .filter(Boolean)
                 .join(", ") || "Toàn bộ thửa tham gia vụ";
             const isSeasonActive = log.seasonStatus === "active";
+            const canDelete = isSeasonActive && !isLogPastGracePeriod(log);
             const seasonLabel =
               log.seasonLabel ||
               (log.season ? formatSeasonLabel(log.season) : null) ||
@@ -769,13 +783,17 @@ const DiseaseLogs = () => {
                     <button
                       type="button"
                       onClick={() => handleDelete(log._id)}
-                      disabled={!isSeasonActive}
+                      disabled={!canDelete}
                       className={`rounded-lg p-2 transition-colors ${
-                        isSeasonActive
+                        canDelete
                           ? "text-gray-400 hover:bg-red-50 hover:text-red-600"
                           : "cursor-not-allowed text-gray-300"
                       }`}
-                      title={isSeasonActive ? "Xóa" : "Vụ đã kết thúc"}
+                      title={
+                        canDelete
+                          ? "Xóa"
+                          : "Không thể xóa (Quá 3 ngày hoặc vụ đã kết thúc)"
+                      }
                     >
                       <Trash2 size={15} />
                     </button>
@@ -1050,12 +1068,14 @@ const DiseaseLogs = () => {
                 <h3 className="text-base font-bold text-white">
                   {editingLog ? "Chỉnh sửa nhật ký bệnh" : "Thêm nhật ký bệnh"}
                 </h3>
-                <p className="mt-0.5 text-xs text-emerald-200">
+                {/* <p className="mt-0.5 text-xs text-emerald-200">
                   Ghi nhận bệnh theo mùa vụ và phạm vi thửa.
-                </p>
+                </p> */}
                 {isHistoricalEdit && (
                   <p className="mt-1.5 rounded-md bg-amber-500/20 px-2 py-1 text-xs font-medium text-amber-100">
-                    Vụ đã kết thúc — chỉ cập nhật trạng thái và ghi chú xử lý.
+                    {selectedFormSeason?.status !== "active"
+                      ? "Vụ mùa đã kết thúc — chỉ có thể cập nhật trạng thái và ghi chú."
+                      : "Nhật ký đã tạo quá thời hạn chỉnh sửa (3 ngày) — chỉ có thể cập nhật trạng thái và ghi chú."}
                   </p>
                 )}
               </div>
@@ -1325,9 +1345,7 @@ const DiseaseLogs = () => {
                           <CustomCheckbox
                             checked={checked}
                             disabled={isHistoricalEdit}
-                            onChange={() => {
-                              // Đã xử lý onClick ở div bọc ngoài
-                            }}
+                            onChange={() => {}}
                           />
                           <div className="min-w-0 flex-1">
                             <p

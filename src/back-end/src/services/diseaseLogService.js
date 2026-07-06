@@ -710,6 +710,20 @@ const validateDetectedDate = (detectedAt, season) => {
   }
 };
 
+const validateGracePeriod = (log) => {
+  const GRACE_PERIOD_DAYS = 3;
+  const baseDate = log.createdAt || log.detectedAt;
+  const now = new Date();
+
+  const daysSinceCreation = (now - new Date(baseDate)) / (1000 * 60 * 60 * 24);
+
+  if (daysSinceCreation > GRACE_PERIOD_DAYS) {
+    throw new Error(
+      "Nhật ký này đã ghi nhận quá 3 ngày. Bạn không thể xóa hoặc sửa nội dung gốc (chỉ được phép cập nhật trạng thái xử lý).",
+    );
+  }
+};
+
 const createDiseaseLog = async (data, userId, imageUrl = "") => {
   const payload = await buildDiseaseLogPayload(
     data,
@@ -798,6 +812,8 @@ const updateDiseaseLog = async (id, data, currentUser, imageUrl = "") => {
         "Vụ mùa đã kết thúc. Bạn chỉ có thể cập nhật trạng thái xử lý và ghi chú.",
       );
     }
+
+    validateGracePeriod(existing);
 
     const updatedHistoricalLog = await DiseaseLog.findOne(query);
     applyProcessingFields(updatedHistoricalLog, data, currentUser.id);
@@ -995,6 +1011,8 @@ const deleteDiseaseLog = async (id, currentUser) => {
   if (!existing) {
     throw new Error("Không tìm thấy nhật ký bệnh");
   }
+
+  validateGracePeriod(existing);
 
   const seasonId = existing.seasonPlotAssignments?.[0]?.seasonDetail || null;
   if (!seasonId) {
